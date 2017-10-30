@@ -17,13 +17,14 @@ path_to_8k = '/home/jacob/Downloads/UrbanSound8K'
 save_path = path_to_8k+'/spectograms'
 path = path_to_8k+'/audio'
 
+path = '/media/jacob/Files/UrbanSound8K/audio/'
 os.mkdir(save_path)    
 
 
 i = 0
 folders = os.listdir(path)
 for folder in folders:
-    if folder[0:4] == 'fold':
+    if folder[0:5] == 'fold4':
         os.mkdir(save_path+'/'+folder)
         path_temp = path+'/'+folder
         files = os.listdir(path_temp)

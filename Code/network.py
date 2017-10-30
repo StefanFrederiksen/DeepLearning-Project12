@@ -24,7 +24,7 @@ max_epochs = 10
 valid_every = 100
 
 """
-Data loader
+todo: Data loader
 """
 
 tf.reset_default_graph()
@@ -33,9 +33,17 @@ num_classes = 10
 height, width, nchannels = 128, 128, 1
 padding = 'same'
 
+"""
+Parameters for network
+"""
+
 filters_1 = 1
 kernel_size_1 = (1,1) 
 pool_size_1 = (1,1)
+
+filters_2 = 1
+kernel_size_2 = (1,1)
+pool_size_2 = (1,1)
 
 x_pl = tf.placeholder(tf.float32, [None, height, width, nchannels], name='xPlaceholder')
 y_pl = tf.placeholder(tf.float32, [None, num_classes], name='yPlaceholder')
@@ -52,6 +60,12 @@ with tf.variable_scope('convlayer1'):
     if show_dimensions == True:
         print('input\t\t', x_pl.get_shape())
         print('output layer1\t', x.get_shape())
+        
+with tf.variable_scope('convlayer2'):
+    conv2 = Conv2D(filters_2, kernel_size_2, strides=(2,2), padding=padding, activation='relu')
+    x = conv2(x)
+    pool2 = MaxPooling2D(pool_size=pool_size_2, strides=None, padding=padding)
+    x = pool2(x)
     
 with tf.variable_scope('output_layer'):
     denseOut = Dense(units=num_classes, activation='softmax')
@@ -83,7 +97,7 @@ with tf.variable_scope('performance'):
     correct_prediction = tf.equal(tf.argmax(y, axis=1), tf.argmax(y_pl, axis=1))
     
     """
-    Implement correct_predicgtion when multi labels present
+    todo: Implement correct_prediction when multi labels present
     """
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
@@ -97,6 +111,7 @@ train_loss, train_accuracy = [],[]
 test_loss, test_accuracy = [],[]
 saver = tf.train.Saver()
 batches_completed = 0 
+epochs_completed = 0
 
 with tf.Session() as sess:
     if load_model == True:
@@ -125,6 +140,9 @@ with tf.Session() as sess:
                 
                 fetches_valid = [cross_entropy, accuracy]
                 
+                """
+                todo: valid samples hentes
+                """
                 feed_dict_valid = {x_pl: x_valid, y_pl: y_valid}
                 _loss, _acc = sess.run(fetches_valid, feed_dict_valid)
                 
