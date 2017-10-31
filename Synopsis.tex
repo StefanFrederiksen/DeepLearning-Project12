@@ -1,5 +1,6 @@
 \documentclass[times,12pt]{article}    % Specifies the document style.
 \usepackage{amsmath}
+\usepackage{hyperref} % Used for url in references
 
 \textwidth 16cm
 \textheight 24cm
@@ -25,14 +26,15 @@
 \def\squeeze{\itemsep=0pt\parskip=0pt}
 
 \begin{document}
+\pagenumbering{gobble} % Turns off page numbering
 \section*{Synopsis}
 
 \noindent \textbf{1 - Title of project:}
-\noindent 
+\noindent Audio Event Research
 
 \noindent \textbf{2 - Name and study ID of all group members:}
 \begin{itemize}
-\item  
+\item Stefan Frederiksen - s144469
 \item Jacob Johansen - s103808
 \end{itemize}
 
@@ -44,13 +46,32 @@ This is interesting for two reasons. In some situations it might be desirable to
 \noindent \textbf{4 - Milestones:}
 
 \begin{itemize}
-\item Implement a (simple) CNN network that gets a descent accuracy on non corrupted Urban8k data.
-\item Modify CNN such that we get a descent, or high as possible, accuracy on Urban8k data corrupted with noise (white-noise \& speech).
+\item Implement a (simple) CNN network that gets a descent accuracy on the native Urban8k data.
+\item Modify CNN such that we get a decent, or as high as possible, accuracy on Urban8k data altered with noise (white-noise \& speech).
 \item Modify CNN such that we can classify multiple labels, data is Urban8k added together.
-\item Corrupt multi label data with noise and evaluate performance
+\item Alter multi label data with noise and evaluate performance
 \end{itemize}
 
+\begin{thebibliography}{9}
+\bibitem{googleblogannouncement} 
+Dan Ellis, Google Research Scientist.
+\textit{Announcing AudioSet: A Dataset for Audio Event Research},
+\url{https://research.googleblog.com/2017/03/announcing-audioset-dataset-for-audio.html}. 
+March 30th, 2017.
+ 
+\bibitem{dataset} 
+Justin Salamon, Christopher Jacoby, and Juan Pablo Bello.
+\textit{Urban Sound Datasets (Namely URBANSOUND8K)},
+\url{https://serv.cusp.nyu.edu/projects/urbansounddataset/urbansound8k.html}, 
+22st {ACM} International Conference on Multimedia ({ACM-MM'14}), November 2014.
+ 
+\bibitem{piczakpaper} 
+Karol J. Piczak.
+\textit{Environmental Sound Classification with Convolutional Neural Networks},
+\url{http://karol.piczak.com/papers/Piczak2015-ESC-ConvNet.pdf}, 
+2015 IEEE International workshop on machine learning for signal processing, September 17–20, 2015, Boston, USA.
 
+\end{thebibliography}
 
 
 \end{document}
