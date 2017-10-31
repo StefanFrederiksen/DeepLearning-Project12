@@ -125,7 +125,7 @@ with tf.Session() as sess:
             _train_loss, _train_accuracy = [],[]
             
             # Run training
-            x_batch, y_batch = "data loader here"
+            x_batch, y_batch = "todo: data loader here"
             fetches_train = [train_op, cross_entropy, accuracy]
             feed_dict_train = {x_pl: x_batch, y_pl: y_batch}
             _, _loss, _acc = sess.run(fetches_train, feed_dict_train)
