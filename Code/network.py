@@ -8,24 +8,22 @@ Created on Mon Oct 30 13:11:18 2017
 
 import numpy as np
 import tensorflow as tf
-
+import os
 import utils 
-import keras
-from keras.layers import Dense, Conv2D, MaxPooling2D
-from tensorflow.contrib.layers import flatten
+from tensorflow.contrib.layers import flatten, max_pool2d, conv2d, fully_connected 
 
 path = ''
 show_dimensions = True
 
 load_model = True
 save_model = True
+regulazation = True; reg_scale = 0.0001
+dropout = True; keep_chance = 0.5
+
 batch_size = 32
 max_epochs = 10
 valid_every = 100
 
-"""
-todo: Data loader
-"""
 
 tf.reset_default_graph()
 
@@ -33,17 +31,29 @@ num_classes = 10
 height, width, nchannels = 128, 128, 1
 padding = 'same'
 
+
 """
 Parameters for network
 """
 
 filters_1 = 1
 kernel_size_1 = (1,1) 
+stride_kernel_1 = (2,2)
 pool_size_1 = (1,1)
+stride_pool_1 = (2,2)
 
 filters_2 = 1
 kernel_size_2 = (1,1)
+stride_kernel_2 = (2,2)
 pool_size_2 = (1,1)
+stride_pool_2 = (2,2)
+
+units1 = 32
+
+
+"""
+todo: import and test data loader
+"""
 
 x_pl = tf.placeholder(tf.float32, [None, height, width, nchannels], name='xPlaceholder')
 y_pl = tf.placeholder(tf.float32, [None, num_classes], name='yPlaceholder')
@@ -52,27 +62,36 @@ y_pl = tf.placeholder(tf.float32, [None, num_classes], name='yPlaceholder')
 The network
 """
 with tf.variable_scope('convlayer1'):
-    conv1 = Conv2D(filters_1, kernel_size_1, strides=(2,2), padding=padding, activation='relu')
-    x = conv1(x_pl)   
-    pool1 = MaxPooling2D(pool_size=pool_size_1, strides=None, padding=padding)    
-    x = pool1(x)    
+    x = conv2d(x_pl, filters_1, kernel_size_1, stride=stride_kernel_1, padding=padding, activation_fn=tf.nn.relu)   
+    x = max_pool2d(x, pool_size_1, stride=stride_pool_1, padding=padding)    
     
     if show_dimensions == True:
-        print('input\t\t', x_pl.get_shape())
-        print('output layer1\t', x.get_shape())
+        print()
+        print('input\t\t\t', x_pl.get_shape())
+        print('output convlayer1\t', x.get_shape())
         
 with tf.variable_scope('convlayer2'):
-    conv2 = Conv2D(filters_2, kernel_size_2, strides=(2,2), padding=padding, activation='relu')
-    x = conv2(x)
-    pool2 = MaxPooling2D(pool_size=pool_size_2, strides=None, padding=padding)
-    x = pool2(x)
-    
-with tf.variable_scope('output_layer'):
-    denseOut = Dense(units=num_classes, activation='softmax')
-    y = denseOut(x)
+    x = conv2d(x, filters_2, kernel_size_2, stride=stride_kernel_2, padding=padding, activation_fn=tf.nn.relu)
+    x = max_pool2d(x, pool_size_2, stride=stride_pool_2, padding=padding)
     
     if show_dimensions == True:
-        print('final output\t', y.get_shape())
+        print('output convlayer2\t', x.get_shape())
+    
+with tf.variable_scope('denselayer1'):
+    x = flatten(x)
+    x = fully_connected(x, units1, activation_fn=tf.nn.relu)
+    
+    if dropout == True:
+        x = tf.layers.dropout(x, rate=keep_chance)
+    if show_dimensions == True:
+        print('output denselayer1\t', x.get_shape())
+        
+with tf.variable_scope('output_layer'):
+    y = fully_connected(x,  num_classes, activation_fn=tf.nn.softmax)
+    
+    if show_dimensions == True:
+        print('final output\t\t', y.get_shape())
+        print()
         
 """
 Loss, Optimizer, Accuracy, etc
@@ -81,7 +100,14 @@ with tf.variable_scope('loss'):
     #cross entropy per sample
     cross_entropy = -tf.reduce_sum(y_pl * tf.log(y+1e-8), axis=[1])
     #average cross entropy
-    cross_entropy = tf.reduce_mean(cross_entropy)
+    loss = tf.reduce_mean(cross_entropy)
+    
+    if regulazation == True:
+        regularize = tf.contrib.layers.l2_regularizer(reg_scale)
+        params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+        reg_term = sum([regularize(param) for param in params])
+        loss += reg_term
+        
 
 with tf.variable_scope('training'):
     #define optimizer
@@ -90,7 +116,7 @@ with tf.variable_scope('training'):
     #optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.1)
 
     #apply it
-    train_op = optimizer.minimize(cross_entropy)
+    train_op = optimizer.minimize(loss)
     
 with tf.variable_scope('performance'):
     #comparing results with labels
@@ -115,8 +141,12 @@ epochs_completed = 0
 
 with tf.Session() as sess:
     if load_model == True:
-        saver.restore(sess, "../model/model.ckpt")
-        print("Model restored")
+        if len(os.listdir('../model/')) == 0:
+            print("No model found, initializing from new\n")
+            sess.run(tf.global_variables_initializer())
+        else:
+            saver.restore(sess, "../model/model.ckpt")
+            print("Model restored\n")
     else:
         sess.run(tf.global_variables_initializer())
     print("\ttrain_loss \ttrain_acc \tvalid_loss \tvalid_acc")
@@ -135,24 +165,34 @@ with tf.Session() as sess:
             
             # Compute validation, loss and accuracy
             if batches_completed % valid_every == 0:
+                keep_chance_temp = keep_chance
+                keep_chance = 1
                 train_loss.append(np.mean(_train_loss))
                 train_accuracy.append(np.mean(_train_accuracy))
                 
                 fetches_valid = [cross_entropy, accuracy]
                 
                 """
-                todo: valid samples hentes
+                todo: draw valid samples
                 """
                 feed_dict_valid = {x_pl: x_valid, y_pl: y_valid}
                 _loss, _acc = sess.run(fetches_valid, feed_dict_valid)
                 
                 valid_loss.append(_loss)
                 valid_accuracy.append(_acc)
-                
+                keep_chance = keep_chance_temp
                 print("%d:\t  %.2f\t\t  %.1f\t\t  %.2f\t\t  %.1f" \
                       % (batches_completed, train_loss[-1], train_accuracy[-1], \
                          valid_loss[-1], valid_accuracy[-1]))
-                
+        more_test_data = True
+        while more_test_data == True:
+            x_batch, y_batch = "todo: test data loader"
+            feed_dict_test = {x_pl: x_batch, y_pl: y_batch}
+            _loss, _acc = sess.run(fetches_valid, feed_dict_test)
+            test_loss.append(_loss)
+            test_accuracy.append(_acc)
+        print('Test loss {:6.3f}, Test acc {:6.3f}'.format(
+                np.mean(test_loss), np.mean(test_accuracy)))
                 
     except KeyboardInterrupt:
         pass

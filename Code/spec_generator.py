@@ -24,7 +24,7 @@ os.mkdir(save_path)
 i = 0
 folders = os.listdir(path)
 for folder in folders:
-    if folder[0:5] == 'fold4':
+    if folder[0:4] == 'fold':
         os.mkdir(save_path+'/'+folder)
         path_temp = path+'/'+folder
         files = os.listdir(path_temp)
