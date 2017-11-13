@@ -1,7 +1,6 @@
 import os
 from os.path import abspath
 import numpy as np
-import random
 from sklearn.model_selection import StratifiedShuffleSplit
 
 
@@ -45,25 +44,8 @@ class BatchLoader:
         self._sss = StratifiedShuffleSplit(test_size=0.1, random_state=self._seed)
         self._idcs_train, self._idcs_valid = next(iter(self._sss.split(self._files, self._files_labels)))
 
-    def get_train_files(self):
-        return self._files
-
-    def get_train_files_size(self):
-        return len(self._files)
-
-    def get_test_files(self):
-        return self._test_files
-
-    def get_test_files_size(self):
-        return len(self._test_files)
-
-    def shuffle(self, seed=0):
-        if seed == 0:
-            _seed = np.random.randint(1, 1000)
-        else:
-            _seed = seed
-        random.seed(_seed)
-        random.shuffle(self._files)
+    def load_data(self, file):
+        return np.genfromtxt(self._dir + '/' + file, delimiter=',')
 
     def shuffle_train(self):
         np.random.shuffle(self._idcs_train)
@@ -81,7 +63,7 @@ class BatchLoader:
         while True:
             self.shuffle_train()
             for idx in self._idcs_train:
-                batch["data"][i] = np.genfromtxt(self._dir + '/' + self._files[idx], delimiter=',')
+                batch["data"][i] = self.load_data(self._files[idx])
                 batch["labels"][i][get_label(self._files[idx])] = 1
                 i += 1
                 if i >= self._batch_size:
@@ -96,7 +78,7 @@ class BatchLoader:
         batch = self.gen_batch()
         i = 0
         for idx in self._idcs_valid:
-            batch["data"][i] = np.genfromtxt(self._dir + '/' + self._files[idx], delimiter=',')
+            batch["data"][i] = self.load_data(self._files[idx])
             batch["labels"][i][get_label(self._files[idx])] = 1
             i += 1
             if i >= self._batch_size:
@@ -106,27 +88,16 @@ class BatchLoader:
         if i != 0:
             yield batch, i
 
-    def get_train_data(self, start_index, batch_size):
-        files_to_return = []
-        if start_index + batch_size <= len(self._files):
-            files_to_return.append(self._files[start_index:start_index + batch_size][0])
-        else:
-            files_to_return.append(self._files[start_index:][0])
-            files_to_return.append(self._files[:batch_size - start_index + len(self._files)][0])
-
-        data_to_return = np.zeros((batch_size, self._num_features, self._num_features))
-        label_to_return = np.zeros((batch_size, self._num_classes))
-        for idx, file in enumerate(files_to_return):
-            data = np.genfromtxt(self._dir + '/' + file, delimiter=',')
-            data_to_return[idx] = data
-            label_to_return[idx][int(file.split('-')[1])] = 1
-
-        return data_to_return, label_to_return
-
-    def get_test_data(self):
-        data_to_return = np.zeros((self.get_test_files_size(), self._num_features, self._num_features))
-        label_to_return = np.zeros((self.get_test_files_size(), self._num_classes))
-        for idx, file in enumerate(self._test_files):
-            data = np.genfromtxt(self._dir + "/" + file, delimiter=',')
-            data_to_return[idx] = data
-            label_to_return[idx][int(file.split('-')[1])] = 1
+    def gen_test(self):
+        batch = self.gen_batch()
+        i = 0
+        for idx in range(len(self._test_files)):
+            batch["data"][i] = self.load_data(self._test_files[idx])
+            batch["labels"][i][get_label(self._test_files[idx])] = 1
+            i += 1
+            if i >= self._batch_size:
+                yield batch, i
+                batch = self.gen_batch()
+                i = 0
+        if i != 0:
+            yield batch, i
