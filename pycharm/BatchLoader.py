@@ -81,9 +81,6 @@ class BatchLoader:
         while True:
             self.shuffle_train()
             for idx in self._idcs_train:
-                print("Idx in gen_train: ", idx)
-                print("i in gen_train: ", i)
-                print("iteration in gen_train: ", iteration)
                 batch["data"][i] = np.genfromtxt(self._dir + '/' + self._files[idx], delimiter=',')
                 batch["labels"][i][get_label(self._files[idx])] = 1
                 i += 1
@@ -132,21 +129,3 @@ class BatchLoader:
             data = np.genfromtxt(self._dir + "/" + file, delimiter=',')
             data_to_return[idx] = data
             label_to_return[idx][int(file.split('-')[1])] = 1
-
-
-# path = dirname(dirname(realpath(__file__))) + "/Spectrograms/fold1"
-# cDataLoader = DataLoader(path)
-# print(cDataLoader.get_files()[:5])
-
-loader = BatchLoader("../Spectrograms", [4], batch_size=2, num_iterations=5)
-
-print("Test files: " + str(loader.get_test_files_size()))
-print("Training files: " + str(loader.get_train_files_size()))
-
-
-lel = next(loader.gen_train())
-print(lel)
-#
-# for indexx, batch_train in enumerate(loader.gen_train()):
-#     # print("Batch Train: \n", batch_train)
-#     continue
