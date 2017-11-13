@@ -1,5 +1,5 @@
 import os
-from os.path import dirname, realpath, abspath
+from os.path import abspath
 import numpy as np
 import random
 from sklearn.model_selection import StratifiedShuffleSplit
@@ -8,7 +8,8 @@ from sklearn.model_selection import StratifiedShuffleSplit
 def get_label(filename):
     return int(filename.split('-')[1])
 
-class DataLoader:
+
+class BatchLoader:
     def __init__(self, train_directory, test_folds, batch_size=32, seed=0, num_classes=10, num_features=128,
                  num_iterations=10):
         self._dir = abspath(train_directory)
@@ -98,8 +99,8 @@ class DataLoader:
         batch = self.gen_batch()
         i = 0
         for idx in self._idcs_valid:
-            batch[i][0] = np.genfromtxt(self._dir + '/' + self._files[idx])
-            batch[i][1][get_label(self._files[idx])] = 1
+            batch["data"][i][0] = np.genfromtxt(self._dir + '/' + self._files[idx], delimiter=',')
+            batch["labels"][i][1][get_label(self._files[idx])] = 1
             if i >= self._batch_size:
                 yield batch, i
                 batch = self.gen_batch()
@@ -133,33 +134,11 @@ class DataLoader:
             label_to_return[idx][int(file.split('-')[1])] = 1
 
 
-class BatchLoader:
-    def __init__(self, path, test_folds, num_classes=10, batch_size=4, seed=0):
-        self.dataloader = DataLoader(path, test_folds)
-        self._batch_size = batch_size
-        self._num_classes = num_classes
-        self._epoch = 0
-        self._index_in_epoch = 0
-
-        self.dataloader.shuffle(seed)
-
-    def get_cur_epoch(self):
-        return self._epoch
-
-    def get_batch(self):
-        index = self._index_in_epoch
-        self._index_in_epoch = (self._index_in_epoch + self._batch_size) % self.dataloader.get_train_files_size()
-        if index >= self._index_in_epoch:
-            self._epoch += 1
-        return self.dataloader.get_train_data(index, self._batch_size)
-
-
 # path = dirname(dirname(realpath(__file__))) + "/Spectrograms/fold1"
 # cDataLoader = DataLoader(path)
 # print(cDataLoader.get_files()[:5])
 
-cBatchLoader = BatchLoader("../Spectrograms", [4], batch_size=1)
-loader = DataLoader("../Spectrograms", [4], batch_size=1, num_iterations=1)
+loader = BatchLoader("../Spectrograms", [4], batch_size=2, num_iterations=5)
 
 print("Test files: " + str(loader.get_test_files_size()))
 print("Training files: " + str(loader.get_train_files_size()))
