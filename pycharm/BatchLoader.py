@@ -98,6 +98,7 @@ class BatchLoader:
         for idx in self._idcs_valid:
             batch["data"][i] = np.genfromtxt(self._dir + '/' + self._files[idx], delimiter=',')
             batch["labels"][i][get_label(self._files[idx])] = 1
+            i += 1
             if i >= self._batch_size:
                 yield batch, i
                 batch = self.gen_batch()
