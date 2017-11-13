@@ -9,7 +9,7 @@ def get_label(filename):
 
 
 class BatchLoader:
-    def __init__(self, train_directory, test_folds, batch_size=32, seed=0, num_classes=10, num_features=128,
+    def __init__(self, train_directory, test_folds, batch_size=32, seed=None, num_classes=10, num_features=128,
                  num_iterations=10):
         self._dir = abspath(train_directory)
 
@@ -36,12 +36,7 @@ class BatchLoader:
                     self._files.append(folder + "/" + filename)
                     self._files_labels.append(get_label(filename))
 
-        if seed == 0:
-            self._seed = np.random.randint(1, 1000)
-        else:
-            self._seed = seed
-
-        self._sss = StratifiedShuffleSplit(test_size=0.1, random_state=self._seed)
+        self._sss = StratifiedShuffleSplit(test_size=0.1, random_state=seed)
         self._idcs_train, self._idcs_valid = next(iter(self._sss.split(self._files, self._files_labels)))
 
     def load_data(self, file):
