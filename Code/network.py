@@ -11,18 +11,21 @@ import tensorflow as tf
 import os
 import utils 
 from tensorflow.contrib.layers import flatten, max_pool2d, conv2d, fully_connected 
+from BatchLoader import BatchLoader
 
 path = ''
 show_dimensions = True
 
 load_model = True
 save_model = True
+# todo: model navn
 regulazation = True; reg_scale = 0.0001
 dropout = True; keep_chance = 0.5
 
 batch_size = 32
 max_epochs = 10
 valid_every = 100
+seed = 1
 
 
 tf.reset_default_graph()
@@ -36,24 +39,23 @@ padding = 'same'
 Parameters for network
 """
 
-filters_1 = 1
-kernel_size_1 = (1,1) 
+filters_1 = 40
+kernel_size_1 = (4,4) 
 stride_kernel_1 = (2,2)
-pool_size_1 = (1,1)
+pool_size_1 = (4,4)
 stride_pool_1 = (2,2)
 
-filters_2 = 1
-kernel_size_2 = (1,1)
+filters_2 = 40
+kernel_size_2 = (4,4)
 stride_kernel_2 = (2,2)
-pool_size_2 = (1,1)
+pool_size_2 = (4,4)
 stride_pool_2 = (2,2)
 
-units1 = 32
+units1 = 1024
 
 
-"""
-todo: import and test data loader
-"""
+Batch = BatchLoader('../Spectrograms', [1], batch_size=batch_size, 
+                    num_classes=num_classes, num_features=height, seed=seed)
 
 x_pl = tf.placeholder(tf.float32, [None, height, width, nchannels], name='xPlaceholder')
 y_pl = tf.placeholder(tf.float32, [None, num_classes], name='yPlaceholder')
@@ -139,6 +141,7 @@ saver = tf.train.Saver()
 batches_completed = 0 
 epochs_completed = 0
 
+
 with tf.Session() as sess:
     if load_model == True:
         if len(os.listdir('../model/')) == 0:
@@ -153,37 +156,42 @@ with tf.Session() as sess:
     try:
         while epochs_completed < max_epochs:
             _train_loss, _train_accuracy = [],[]
+            _valid_loss, _valid_acc = [],[]
             
             # Run training
-            x_batch, y_batch = "todo: data loader here"
-            fetches_train = [train_op, cross_entropy, accuracy]
-            feed_dict_train = {x_pl: x_batch, y_pl: y_batch}
-            _, _loss, _acc = sess.run(fetches_train, feed_dict_train)
-            
-            _train_loss.append(_loss)
-            _train_accuracy.append(_acc)
-            
-            # Compute validation, loss and accuracy
-            if batches_completed % valid_every == 0:
-                keep_chance_temp = keep_chance
-                keep_chance = 1
-                train_loss.append(np.mean(_train_loss))
-                train_accuracy.append(np.mean(_train_accuracy))
+            for j, batch in enumerate(Batch.gen_train()):
+                x_batch, y_batch = batch['data'], batch['labels']
+                fetches_train = [train_op, cross_entropy, accuracy]
+                feed_dict_train = {x_pl: x_batch, y_pl: y_batch}
+                _, _loss, _acc = sess.run(fetches_train, feed_dict_train)
+                _train_loss.append(_loss)
+                _train_accuracy.append(_acc)
+                batches_completed += 1
                 
-                fetches_valid = [cross_entropy, accuracy]
-                
-                """
-                todo: draw valid samples
-                """
-                feed_dict_valid = {x_pl: x_valid, y_pl: y_valid}
-                _loss, _acc = sess.run(fetches_valid, feed_dict_valid)
-                
-                valid_loss.append(_loss)
-                valid_accuracy.append(_acc)
-                keep_chance = keep_chance_temp
-                print("%d:\t  %.2f\t\t  %.1f\t\t  %.2f\t\t  %.1f" \
-                      % (batches_completed, train_loss[-1], train_accuracy[-1], \
-                         valid_loss[-1], valid_accuracy[-1]))
+                # Compute validation, loss and accuracy
+                if batches_completed % valid_every == 0:
+                    keep_chance_temp = keep_chance
+                    keep_chance = 1
+                    train_loss.append(np.mean(_train_loss))
+                    train_accuracy.append(np.mean(_train_accuracy))
+                    
+                    fetches_valid = [cross_entropy, accuracy]
+                    
+                    for batch, i in Batch.gen_valid():
+                        x_valid = batch['data']
+                        y_valid = batch['labels']
+                        feed_dict_valid = {x_pl: x_valid, y_pl: y_valid}
+                        _loss, _acc = sess.run(fetches_valid, feed_dict_valid)
+                        
+                        _valid_loss.append(np.mean(_loss))
+                        _valid_acc.append(np.mean(_acc))
+                        
+                    valid_loss.append(np.mean(_valid_loss))
+                    valid_accuracy.append(np.mean(_valid_acc))
+                    keep_chance = keep_chance_temp
+                    print("%d:\t  %.2f\t\t  %.1f\t\t  %.2f\t\t  %.1f" \
+                          % (batches_completed, train_loss[-1], train_accuracy[-1], \
+                             valid_loss[-1], valid_accuracy[-1]))
         more_test_data = True
         while more_test_data == True:
             x_batch, y_batch = "todo: test data loader"

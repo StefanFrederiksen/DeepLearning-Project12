@@ -10,12 +10,13 @@ def get_label(filename):
 
 class BatchLoader:
     def __init__(self, train_directory, test_folds, batch_size=32, seed=None, num_classes=10, num_features=128,
-                 num_iterations=10):
+                 nchannels=1,num_iterations=10):
         self._dir = abspath(train_directory)
 
         self._num_classes = num_classes
         self._batch_size = batch_size
         self._num_features = num_features
+        self._num_channels = nchannels
         self._num_iterations = num_iterations
 
         self._files = []
@@ -40,14 +41,14 @@ class BatchLoader:
         self._idcs_train, self._idcs_valid = next(iter(self._sss.split(self._files, self._files_labels)))
 
     def load_data(self, file):
-        return np.genfromtxt(self._dir + '/' + file, delimiter=',')
+        return np.reshape(np.genfromtxt(self._dir + '/' + file, delimiter=','),(self._num_features, self._num_features, self._num_channels))
 
     def shuffle_train(self):
         np.random.shuffle(self._idcs_train)
 
     def gen_batch(self):
         batch_holder = dict()
-        batch_holder["data"] = np.zeros((self._batch_size, self._num_features, self._num_features), dtype='float32')
+        batch_holder["data"] = np.zeros((self._batch_size, self._num_features, self._num_features, self._num_channels), dtype='float32')
         batch_holder["labels"] = np.zeros((self._batch_size, self._num_classes), dtype='float32')
         return batch_holder
 
