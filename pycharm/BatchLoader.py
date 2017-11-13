@@ -2,18 +2,15 @@ import os
 from os.path import dirname, realpath, abspath
 import numpy as np
 import random
+from sklearn.model_selection import StratifiedShuffleSplit
 
-import warnings
 
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    # noinspection PyDeprecation
-    from sklearn.cross_validation import StratifiedShuffleSplit
-
+def get_label(filename):
+    return int(filename.split('-')[1])
 
 class DataLoader:
-    def __init__(self, train_directory, test_folds, batch_size = 32, seed = 0, num_classes = 10, num_features = 128,
-                 num_iterations = 1e3):
+    def __init__(self, train_directory, test_folds, batch_size=32, seed=0, num_classes=10, num_features=128,
+                 num_iterations=10):
         self._dir = abspath(train_directory)
 
         self._num_classes = num_classes
@@ -22,24 +19,30 @@ class DataLoader:
         self._num_iterations = num_iterations
 
         self._files = []
+        self._files_labels = []
         self._test_files = []
+        self._test_files_labels = []
         for folder in os.listdir(train_directory):
             if int(folder[4:]) in test_folds:
                 for filename in os.listdir(train_directory + "/" + folder):
                     if not filename.endswith(".txt"):
                         continue
                     self._test_files.append(folder + "/" + filename)
+                    self._test_files_labels.append(get_label(filename))
             else:
                 for filename in os.listdir(train_directory + "/" + folder):
                     if not filename.endswith(".txt"):
                         continue
                     self._files.append(folder + "/" + filename)
+                    self._files_labels.append(get_label(filename))
 
-        self._idcs_train, self._idcs_valid = next(iter(
-            StratifiedShuffleSplit(self._files,
-                                   n_iter=10,
-                                   test_size=0.1,
-                                   random_state=seed)))
+        if seed == 0:
+            self._seed = np.random.randint(1, 1000)
+        else:
+            self._seed = seed
+
+        self._sss = StratifiedShuffleSplit(test_size=0.1, random_state=self._seed)
+        self._idcs_train, self._idcs_valid = next(iter(self._sss.split(self._files, self._files_labels)))
 
     def get_train_files(self):
         return self._files
@@ -65,8 +68,10 @@ class DataLoader:
         np.random.shuffle(self._idcs_train)
 
     def gen_batch(self):
-        return np.zeros((self.get_train_files_size(), self._num_features, self._num_features)), \
-                np.zeros((self.get_train_files_size(), self._num_classes))
+        batch_holder = dict()
+        batch_holder["data"] = np.zeros((self._batch_size, self._num_features, self._num_features), dtype='float32')
+        batch_holder["labels"] = np.zeros((self._batch_size, self._num_classes), dtype='float32')
+        return batch_holder
 
     def gen_train(self):
         batch = self.gen_batch()
@@ -75,8 +80,11 @@ class DataLoader:
         while True:
             self.shuffle_train()
             for idx in self._idcs_train:
-                batch[i][0] = np.genfromtxt(self._dir + '/' + self._files[idx])
-                batch[i][1][int(self._files[idx].split('-')[1])] = 1
+                print("Idx in gen_train: ", idx)
+                print("i in gen_train: ", i)
+                print("iteration in gen_train: ", iteration)
+                batch["data"][i] = np.genfromtxt(self._dir + '/' + self._files[idx], delimiter=',')
+                batch["labels"][i][get_label(self._files[idx])] = 1
                 i += 1
                 if i >= self._batch_size:
                     yield batch
@@ -91,7 +99,7 @@ class DataLoader:
         i = 0
         for idx in self._idcs_valid:
             batch[i][0] = np.genfromtxt(self._dir + '/' + self._files[idx])
-            batch[i][1][int(self._files[idx].split('-')[1])] = 1
+            batch[i][1][get_label(self._files[idx])] = 1
             if i >= self._batch_size:
                 yield batch, i
                 batch = self.gen_batch()
@@ -151,11 +159,15 @@ class BatchLoader:
 # print(cDataLoader.get_files()[:5])
 
 cBatchLoader = BatchLoader("../Spectrograms", [4], batch_size=1)
-loader = DataLoader("../Spectrograms", [4], batch_size=1, num_iterations=5)
+loader = DataLoader("../Spectrograms", [4], batch_size=1, num_iterations=1)
 
 print("Test files: " + str(loader.get_test_files_size()))
 print("Training files: " + str(loader.get_train_files_size()))
 
-for i, batch_train in enumerate(loader.gen_train()):
-    print("Batch Train: \n", batch_train)
 
+lel = next(loader.gen_train())
+print(lel)
+#
+# for indexx, batch_train in enumerate(loader.gen_train()):
+#     # print("Batch Train: \n", batch_train)
+#     continue
