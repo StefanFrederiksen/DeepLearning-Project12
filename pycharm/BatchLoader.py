@@ -18,6 +18,7 @@ class BatchLoader:
         self._num_features = num_features
         self._num_channels = nchannels
         self._num_iterations = num_iterations
+        self._cur_epoch = -1
 
         self._files = []
         self._files_labels = []
@@ -40,6 +41,9 @@ class BatchLoader:
         self._sss = StratifiedShuffleSplit(test_size=0.1, random_state=seed)
         self._idcs_train, self._idcs_valid = next(iter(self._sss.split(self._files, self._files_labels)))
 
+    def get_cur_epoch(self):
+        return self._cur_epoch
+
     def load_data(self, file):
         return np.reshape(np.genfromtxt(self._dir + '/' + file, delimiter=','),(self._num_features, self._num_features, self._num_channels))
 
@@ -54,10 +58,10 @@ class BatchLoader:
 
     def gen_train(self):
         batch = self.gen_batch()
-        iteration = 0
         i = 0
         while True:
             self.shuffle_train()
+            self._cur_epoch += 1
             for idx in self._idcs_train:
                 batch["data"][i] = self.load_data(self._files[idx])
                 batch["labels"][i][get_label(self._files[idx])] = 1
@@ -66,9 +70,6 @@ class BatchLoader:
                     yield batch
                     batch = self.gen_batch()
                     i = 0
-                    iteration += 1
-                    if iteration >= self._num_iterations:
-                        break
 
     def gen_valid(self):
         batch = self.gen_batch()
