@@ -26,6 +26,7 @@ batch_size = 32
 max_epochs = 10
 valid_every = 100
 seed = 1
+GPU_FRAC = 1
 
 
 tf.reset_default_graph()
@@ -164,7 +165,8 @@ batches_completed = 0
 epochs_completed = 0
 
 
-with tf.Session() as sess:
+gpu_opts = tf.GPUOptions(per_process_gpu_memory_fraction=GPU_FRAC)
+with tf.Session(config=tf.ConfigProto(gpu_options=gpu_opts)) as sess:
     if load_model == True:
         if len(os.listdir('../model/')) == 0:
             print("No model found, initializing from new\n")
