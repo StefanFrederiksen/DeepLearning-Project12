@@ -39,19 +39,26 @@ padding = 'same'
 Parameters for network
 """
 
-filters_1 = 40
-kernel_size_1 = (4,4) 
+filters_1 = 60
+kernel_size_1 = (8,8) 
 stride_kernel_1 = (2,2)
 pool_size_1 = (4,4)
 stride_pool_1 = (2,2)
 
-filters_2 = 40
-kernel_size_2 = (4,4)
+filters_2 = 60
+kernel_size_2 = (8,8)
 stride_kernel_2 = (2,2)
 pool_size_2 = (4,4)
 stride_pool_2 = (2,2)
 
-units1 = 1024
+filters_3 = 60
+kernel_size_3 = (8,8)
+stride_kernel_3 = (2,2)
+pool_size_3 = (4,4)
+stride_pool_3 = (2,2)
+
+units1 = 128
+units2 = 128
 
 
 Batch = BatchLoader('../Spectrograms', [1], batch_size=batch_size, 
@@ -79,6 +86,13 @@ with tf.variable_scope('convlayer2'):
     if show_dimensions == True:
         print('output convlayer2\t', x.get_shape())
     
+with tf.variable_scope('convlayer3'):
+    x = conv2d(x, filters_3, kernel_size_3, stride=stride_kernel_3, padding=padding, activation_fn=tf.nn.relu)
+    x = max_pool2d(x, pool_size_3, stride=stride_pool_3, padding=padding)
+    
+    if show_dimensions == True:
+        print('output convlayer3\t', x.get_shape())
+    
 with tf.variable_scope('denselayer1'):
     x = flatten(x)
     x = fully_connected(x, units1, activation_fn=tf.nn.relu)
@@ -87,6 +101,14 @@ with tf.variable_scope('denselayer1'):
         x = tf.layers.dropout(x, rate=keep_chance)
     if show_dimensions == True:
         print('output denselayer1\t', x.get_shape())
+        
+with tf.variable_scope('denselayer2'):
+    x = fully_connected(x, units2, activation_fn=tf.nn.relu)
+    
+    if dropout == True:
+        x = tf.layers.dropout(x, rate=keep_chance)
+    if show_dimensions == True:
+        print('output denselayer2\t', x.get_shape())
         
 with tf.variable_scope('output_layer'):
     y = fully_connected(x,  num_classes, activation_fn=tf.nn.softmax)
@@ -189,12 +211,12 @@ with tf.Session() as sess:
                     valid_loss.append(np.mean(_valid_loss))
                     valid_accuracy.append(np.mean(_valid_acc))
                     keep_chance = keep_chance_temp
-                    print("%d:\t  %.2f\t\t  %.1f\t\t  %.2f\t\t  %.1f" \
-                          % (batches_completed, train_loss[-1], train_accuracy[-1], \
+                    print("%d/%d:\t  %.2f\t\t  %.2f\t\t  %.2f\t\t  %.2f" \
+                          % (epochs_completed,batches_completed, train_loss[-1], train_accuracy[-1], \
                              valid_loss[-1], valid_accuracy[-1]))
-        more_test_data = True
-        while more_test_data == True:
-            x_batch, y_batch = "todo: test data loader"
+            epochs_completed += 1
+        for k, batch in enumerate(Batch.gen_test()):
+            x_batch, y_batch = batch['data'], batch['labels']
             feed_dict_test = {x_pl: x_batch, y_pl: y_batch}
             _loss, _acc = sess.run(fetches_valid, feed_dict_test)
             test_loss.append(_loss)

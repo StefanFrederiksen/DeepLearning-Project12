@@ -13,15 +13,15 @@ import librosa
 from sklearn.preprocessing import normalize
 
 
-path_to_8k = '/home/jacob/Downloads/UrbanSound8K'
+path_to_8k = '/media/jacob/Files/UrbanSound8K'
 save_path = path_to_8k+'/spectograms'
 path = path_to_8k+'/audio'
 
-path = '/media/jacob/Files/UrbanSound8K/audio/'
 os.mkdir(save_path)    
 
-
+frac = 1./4 #Fraction of energy that must be in a segment, compared to if energy was uniformly distributed
 i = 0
+j = 0
 folders = os.listdir(path)
 for folder in folders:
     if folder[0:4] == 'fold':
@@ -34,9 +34,15 @@ for folder in folders:
                     sound, sample_rate = librosa.load(path_temp+'/'+file)
                     f, t, sxx = scipy.signal.spectrogram(sound, sample_rate, noverlap=64)
                     sxx = normalize(sxx[1:])
-                    for i in range(int((np.shape(sxx)[1]-np.shape(sxx)[1]%128)/128)):
+                    specs = int((np.shape(sxx)[1]-np.shape(sxx)[1]%128)/128)
+                    energy = sum(sum(sxx))
+                    threshold = float(energy)/specs * frac
+                    for i in range(specs):
                         temp = sxx[:,(i)*128:(i+1)*128]
-                        np.savetxt(save_path+'/'+folder+'/'+file[:-4]+'_'+str(i)+'.txt', temp, delimiter=',')
+                        if sum(sum(temp)) > threshold:
+                            np.savetxt(save_path+'/'+folder+'/'+file[:-4]+'_'+str(i)+'.txt', temp, delimiter=',')
+                        else:
+                            j += 1
                 except:
                     i += 1
   
