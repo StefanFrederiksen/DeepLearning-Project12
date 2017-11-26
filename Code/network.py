@@ -9,7 +9,7 @@ Created on Mon Oct 30 13:11:18 2017
 import numpy as np
 import tensorflow as tf
 import os
-import utils 
+#import utils 
 from tensorflow.contrib.layers import flatten, max_pool2d, conv2d, fully_connected 
 from BatchLoader import BatchLoader
 
@@ -55,7 +55,7 @@ stride_pool_2 = (2,2)
 units1 = 1024
 
 
-Batch = BatchLoader('../Spectrograms', [1], batch_size=batch_size, 
+Batch = BatchLoader('../Spectrograms', [2,3,4,5,6,7,8,9,10], batch_size=batch_size, 
                     num_classes=num_classes, num_features=height, seed=seed)
 
 x_pl = tf.placeholder(tf.float32, [None, height, width, nchannels], name='xPlaceholder')
@@ -146,7 +146,7 @@ epochs_completed = 0
 gpu_opts = tf.GPUOptions(per_process_gpu_memory_fraction=GPU_FRAC)
 with tf.Session(config=tf.ConfigProto(gpu_options=gpu_opts)) as sess:
     if load_model == True:
-        if len(os.listdir('../model/')) == 0:
+        if os.path.exists('../model/') == False:
             print("No model found, initializing from new\n")
             sess.run(tf.global_variables_initializer())
         else:
@@ -168,7 +168,9 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_opts)) as sess:
                 _, _loss, _acc = sess.run(fetches_train, feed_dict_train)
                 _train_loss.append(_loss)
                 _train_accuracy.append(_acc)
+                
                 batches_completed += 1
+                epochs_completed = Batch.get_cur_epoch()
                 
                 # Compute validation, loss and accuracy
                 if batches_completed % valid_every == 0:
