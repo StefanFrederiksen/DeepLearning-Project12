@@ -19,14 +19,14 @@ show_dimensions = True
 load_model = True
 save_model = True
 # todo: model navn
-regulazation = True; reg_scale = 0.0001
+regulazation = True; reg_scale = 0.0005
 dropout = True; keep_chance = 0.5
 
 batch_size = 32
-max_epochs = 10
+max_epochs = 1
 valid_every = 100
-seed = 1
-GPU_FRAC = 1
+seed = None
+GPU_FRAC = 0.75
 
 
 tf.reset_default_graph()
@@ -41,8 +41,8 @@ Parameters for network
 """
 
 filters_1 = 60
-kernel_size_1 = (8,8) 
-stride_kernel_1 = (2,2)
+kernel_size_1 = (16,16) 
+stride_kernel_1 = (4,4)
 pool_size_1 = (4,4)
 stride_pool_1 = (2,2)
 
@@ -53,17 +53,17 @@ pool_size_2 = (4,4)
 stride_pool_2 = (2,2)
 
 filters_3 = 60
-kernel_size_3 = (8,8)
+kernel_size_3 = (4,4)
 stride_kernel_3 = (2,2)
-pool_size_3 = (4,4)
+pool_size_3 = (2,2)
 stride_pool_3 = (2,2)
 
-units1 = 128
-units2 = 128
+units1 = 160
+units2 = 160
 
 
-Batch = BatchLoader('../Spectrograms', [2,3,4,5,6,7,8,9,10], batch_size=batch_size, 
-                    num_classes=num_classes, num_features=height, seed=seed)
+Batch = BatchLoader('/media/jacob/Files/UrbanSound8K/spectrograms', [11], batch_size=batch_size, 
+                    num_classes=num_classes, num_features_1=height, num_features_2=width, seed=seed)
 
 x_pl = tf.placeholder(tf.float32, [None, height, width, nchannels], name='xPlaceholder')
 y_pl = tf.placeholder(tf.float32, [None, num_classes], name='yPlaceholder')
@@ -165,14 +165,19 @@ batches_completed = 0
 epochs_completed = 0
 
 
-gpu_opts = tf.GPUOptions(per_process_gpu_memory_fraction=GPU_FRAC)
-with tf.Session(config=tf.ConfigProto(gpu_options=gpu_opts)) as sess:
+#gpu_opts = tf.GPUOptions(per_process_gpu_memory_fraction=GPU_FRAC)
+#with tf.Session(config=tf.ConfigProto(gpu_options=gpu_opts)) as sess:
+with tf.Session() as sess:
     if load_model == True:
         if os.path.exists('../model/') == False:
+            os.chdir('../model/')
             print("No model found, initializing from new\n")
             sess.run(tf.global_variables_initializer())
+        elif len(os.listdir('../model/')) == 0:
+            print("No model found, initializing from new\n")
+            sess.run(tf.global_variables_initializer())   
         else:
-            saver.restore(sess, "../model/model.ckpt")
+            saver.restore(sess, "../model/model_2nd_train.ckpt")
             print("Model restored\n")
     else:
         sess.run(tf.global_variables_initializer())
@@ -193,6 +198,9 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_opts)) as sess:
                 
                 batches_completed += 1
                 epochs_completed = Batch.get_cur_epoch()
+                
+                if epochs_completed == max_epochs:
+                    break
                 
                 # Compute validation, loss and accuracy
                 if batches_completed % valid_every == 0:
@@ -218,9 +226,9 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_opts)) as sess:
                     print("%d/%d:\t  %.2f\t\t  %.2f\t\t  %.2f\t\t  %.2f" \
                           % (epochs_completed,batches_completed, train_loss[-1], train_accuracy[-1], \
                              valid_loss[-1], valid_accuracy[-1]))
-            epochs_completed += 1
+        print('Training complete, testing accuracy')
         for k, batch in enumerate(Batch.gen_test()):
-            x_batch, y_batch = batch['data'], batch['labels']
+            x_batch, y_batch = batch[0]['data'], batch[0]['labels']
             feed_dict_test = {x_pl: x_batch, y_pl: y_batch}
             _loss, _acc = sess.run(fetches_valid, feed_dict_test)
             test_loss.append(_loss)
@@ -235,5 +243,6 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_opts)) as sess:
     
     
     if save_model == True:
-        save_path = (sess, "../model/model.ckpt")
+        save_path = "../model/model_2nd_train.ckpt"
+        saver.save(sess, save_path)
         print("Model saved in file: %s" % save_path)

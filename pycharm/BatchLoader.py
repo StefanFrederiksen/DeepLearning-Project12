@@ -9,13 +9,14 @@ def get_label(filename):
 
 
 class BatchLoader:
-    def __init__(self, train_directory, test_folds, batch_size=32, seed=None, num_classes=10, num_features=128,
+    def __init__(self, train_directory, test_folds, batch_size=32, seed=None, num_classes=10, num_features_1=128, num_features_2=64,
                  nchannels=1,num_iterations=10):
         self._dir = abspath(train_directory)
 
         self._num_classes = num_classes
         self._batch_size = batch_size
-        self._num_features = num_features
+        self._num_features_1 = num_features_1
+        self._num_features_2 = num_features_2
         self._num_channels = nchannels
         self._num_iterations = num_iterations
         self._cur_epoch = -1
@@ -45,14 +46,14 @@ class BatchLoader:
         return self._cur_epoch
 
     def load_data(self, file):
-        return np.reshape(np.genfromtxt(self._dir + '/' + file, delimiter=','),(self._num_features, self._num_features, self._num_channels))
+        return np.reshape(np.loadtxt(self._dir + '/' + file, delimiter=','),(self._num_features_1, self._num_features_2, self._num_channels))
 
     def shuffle_train(self):
         np.random.shuffle(self._idcs_train)
 
     def gen_batch(self):
         batch_holder = dict()
-        batch_holder["data"] = np.zeros((self._batch_size, self._num_features, self._num_features, self._num_channels), dtype='float32')
+        batch_holder["data"] = np.zeros((self._batch_size, self._num_features_1, self._num_features_2, self._num_channels), dtype='float32')
         batch_holder["labels"] = np.zeros((self._batch_size, self._num_classes), dtype='float32')
         return batch_holder
 
