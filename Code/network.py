@@ -9,6 +9,7 @@ Created on Mon Oct 30 13:11:18 2017
 import numpy as np
 import tensorflow as tf
 import os
+from datetime import datetime
 #import utils 
 from tensorflow.contrib.layers import flatten, max_pool2d, conv2d, fully_connected 
 from BatchLoader import BatchLoader
@@ -16,7 +17,7 @@ from BatchLoader import BatchLoader
 path = ''
 show_dimensions = True
 
-load_model = True
+load_model = False
 save_model = True
 # todo: model navn
 regulazation = True; reg_scale = 0.0005
@@ -25,8 +26,13 @@ dropout = True; keep_chance = 0.5
 batch_size = 32
 max_epochs = 1
 valid_every = 100
+<<<<<<< HEAD
 seed = None
 GPU_FRAC = 0.75
+=======
+seed = 1
+GPU_FRAC = 0.5
+>>>>>>> 2a1053c12bd3fe9c108cf0909f73bef02e3b5759
 
 
 tf.reset_default_graph()
@@ -181,6 +187,10 @@ with tf.Session() as sess:
             print("Model restored\n")
     else:
         sess.run(tf.global_variables_initializer())
+        
+    # Tensorflow Saver
+    saver = tf.train.Saver()
+        
     print("\ttrain_loss \ttrain_acc \tvalid_loss \tvalid_acc")
     try:
         while epochs_completed < max_epochs:
@@ -223,8 +233,8 @@ with tf.Session() as sess:
                     valid_loss.append(np.mean(_valid_loss))
                     valid_accuracy.append(np.mean(_valid_acc))
                     keep_chance = keep_chance_temp
-                    print("%d/%d:\t  %.2f\t\t  %.2f\t\t  %.2f\t\t  %.2f" \
-                          % (epochs_completed,batches_completed, train_loss[-1], train_accuracy[-1], \
+                    print("%d:\t  %.5f\t\t  %.5f\t\t  %.5f\t\t  %.5f" \
+                          % (batches_completed, train_loss[-1], train_accuracy[-1], \
                              valid_loss[-1], valid_accuracy[-1]))
         print('Training complete, testing accuracy')
         for k, batch in enumerate(Batch.gen_test()):
@@ -240,9 +250,9 @@ with tf.Session() as sess:
         pass
     
     
-    
-    
     if save_model == True:
-        save_path = "../model/model_2nd_train.ckpt"
-        saver.save(sess, save_path)
+        now = str(datetime.now())
+        mydir = os.path.join(os.getcwd(), "../model/" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        os.makedirs(mydir)
+        save_path = saver.save(sess, mydir + "/model.ckpt")
         print("Model saved in file: %s" % save_path)

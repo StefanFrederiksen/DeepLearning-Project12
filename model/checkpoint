@@ -1,2 +1,7 @@
+<<<<<<< HEAD
 model_checkpoint_path: "model_2nd_train.ckpt"
 all_model_checkpoint_paths: "model_2nd_train.ckpt"
+=======
+model_checkpoint_path: "model.ckpt"
+all_model_checkpoint_paths: "model.ckpt"
+>>>>>>> 2a1053c12bd3fe9c108cf0909f73bef02e3b5759
