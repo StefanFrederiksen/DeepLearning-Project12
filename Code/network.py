@@ -9,6 +9,7 @@ Created on Mon Oct 30 13:11:18 2017
 import numpy as np
 import tensorflow as tf
 import os
+from datetime import datetime
 #import utils 
 from tensorflow.contrib.layers import flatten, max_pool2d, conv2d, fully_connected 
 from BatchLoader import BatchLoader
@@ -213,8 +214,9 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_opts)) as sess:
         pass
     
     
-    
-    
     if save_model == True:
-        save_path = saver.save(sess, "../model/model.ckpt")
+        now = str(datetime.now())
+        mydir = os.path.join(os.getcwd(), "../model/" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        os.makedirs(mydir)
+        save_path = saver.save(sess, mydir + "/model.ckpt")
         print("Model saved in file: %s" % save_path)
