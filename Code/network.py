@@ -16,7 +16,7 @@ from BatchLoader import BatchLoader
 path = ''
 show_dimensions = True
 
-load_model = True
+load_model = False
 save_model = True
 # todo: model navn
 regulazation = True; reg_scale = 0.0001
@@ -26,7 +26,7 @@ batch_size = 32
 max_epochs = 10
 valid_every = 100
 seed = 1
-GPU_FRAC = 1
+GPU_FRAC = 0.5
 
 
 tf.reset_default_graph()
@@ -54,8 +54,7 @@ stride_pool_2 = (2,2)
 
 units1 = 1024
 
-
-Batch = BatchLoader('../Spectrograms', [2,3,4,5,6,7,8,9,10], batch_size=batch_size, 
+Batch = BatchLoader('../Spectrograms', [10], batch_size=batch_size, 
                     num_classes=num_classes, num_features=height, seed=seed)
 
 x_pl = tf.placeholder(tf.float32, [None, height, width, nchannels], name='xPlaceholder')
@@ -154,6 +153,10 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_opts)) as sess:
             print("Model restored\n")
     else:
         sess.run(tf.global_variables_initializer())
+        
+    # Tensorflow Saver
+    saver = tf.train.Saver()
+        
     print("\ttrain_loss \ttrain_acc \tvalid_loss \tvalid_acc")
     try:
         while epochs_completed < max_epochs:
@@ -193,7 +196,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_opts)) as sess:
                     valid_loss.append(np.mean(_valid_loss))
                     valid_accuracy.append(np.mean(_valid_acc))
                     keep_chance = keep_chance_temp
-                    print("%d:\t  %.2f\t\t  %.1f\t\t  %.2f\t\t  %.1f" \
+                    print("%d:\t  %.5f\t\t  %.5f\t\t  %.5f\t\t  %.5f" \
                           % (batches_completed, train_loss[-1], train_accuracy[-1], \
                              valid_loss[-1], valid_accuracy[-1]))
         more_test_data = True
@@ -213,5 +216,5 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_opts)) as sess:
     
     
     if save_model == True:
-        save_path = (sess, "../model/model.ckpt")
+        save_path = saver.save(sess, "../model/model.ckpt")
         print("Model saved in file: %s" % save_path)
